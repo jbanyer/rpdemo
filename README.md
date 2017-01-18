@@ -12,6 +12,8 @@ It is intended for use on a Raspberry Pi but should run on any Linux platform.
 
 ## usage
 
+Install InfluxDB.
+
 $ python data_logger_app.py
 
 See data_logger_config.json for configuration.
