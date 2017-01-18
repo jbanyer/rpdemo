@@ -1,3 +1,4 @@
+import datetime
 import time
 from sense_hat import SenseHat
 from influxdb import InfluxDBClient
@@ -5,11 +6,10 @@ import system_metrics as sysmet
 import subprocess
 import re
 import logging
-import threading
 
 DATABASE = 'rpdemo'
-PING_HOST = 'google.com.au'
-last_ping_time = 0.0
+SAMPLE_INTERVAL = 5.0
+PING_GOOGLE_HOST = 'google.com.au'
 
 sense = SenseHat()
 
@@ -38,22 +38,6 @@ def ping(host):
         pass
 
     return ping_time
-
-def async_ping(host):
-    '''
-    use a thread to run ping (which blocks) to the given host
-    the result is set into global last_ping_time (ms)
-    '''
-    # TODO: use multiprocessing.pool.ThreadPool?
-    # http://stackoverflow.com/questions/6893968/how-to-get-the-return-value-from-a-thread-in-python
-    def do_ping(host):
-        global last_ping_time
-        last_ping_time = ping(host)
-
-    t = threading.Thread(target=do_ping, args=(host,))
-    # we don't want this thread to stop the main thread from exiting
-    t.setDaemon(True)
-    t.start()
 
 def build_system_point():
     loadavg = sysmet.get_loadavg()
@@ -84,8 +68,12 @@ def build_sensehat_point():
     return point
 
 def build_net_point():
+    # we use ping with a 1 second timeout, which means if the host
+    # is not answering this call may take up to 1 second to return
+    ping_google = ping(PING_GOOGLE_HOST)
+
     fields = {
-        'ping_google': last_ping_time
+        'ping_google': ping_google
     }
 
     point = {
@@ -113,11 +101,18 @@ if __name__ == '__main__':
     influx.switch_database(DATABASE)
 
     while True:
+        start_timestamp = datetime.datetime.now()
+
         points = build_points()
+
+        built_timestamp = datetime.datetime.now()
+        logging.debug('built points in {0} ms'.format((built_timestamp - start_timestamp).total_seconds()*1000))
         logging.debug(str(points))
+
         influx.write_points(points)
+        wrote_timestamp = datetime.datetime.now()
+        logging.debug('wrote points in {0} ms'.format((wrote_timestamp-built_timestamp).total_seconds()*1000))
 
-        # run ping in worker thread, result goes to global last_ping_time
-        async_ping(PING_HOST)
+        sleep_time_sec = SAMPLE_INTERVAL - (datetime.datetime.now() - start_timestamp).total_seconds()
+        time.sleep(sleep_time_sec)
 
-        time.sleep(1)
