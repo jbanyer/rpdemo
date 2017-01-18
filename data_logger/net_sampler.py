@@ -19,7 +19,7 @@ def ping(host):
         match = re.search(pattern, output)
         if match:
             ping_time = float(match.group(1))
-            logging.debug("ping {0} -> {1} ms".format(host, ping_time))
+            #logging.debug("ping {0} -> {1} ms".format(host, ping_time))
         else:
             raise ValueError("failed to parse ping output", output)
     except subprocess.CalledProcessError:
