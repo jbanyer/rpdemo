@@ -20,9 +20,8 @@ WARNING - Flask runs in debug mode for now.
 
 ## Supported items
 
-   |-----------------------|------------------------|
    | key                   | arg                    |
-   |-----------------------+------------------------|
+   | --------------------- | ---------------------- |
    | net.ping              | google.com.au          |
    | sensehat.temperature  |                        |
    | sensehat.humidity     |                        |
@@ -32,7 +31,6 @@ WARNING - Flask runs in debug mode for now.
    | system.loadavg15      |                        |
    | wemo.power            | switch1                |
    | wemo.state            | switch1                |
-   |-----------------------|------------------------|
 
 
 ## Design notes
