@@ -8,6 +8,7 @@ This small project implements a data logger in Python, with the following attrib
  * a simple REST API is provided to manage poll items (add, delete, show items)
  * data logger is configured using JSON
 
+It is intended for use on a Raspberry Pi but should run on any Linux platform.
 
 ## usage
 
