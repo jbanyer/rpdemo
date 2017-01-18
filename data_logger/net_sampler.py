@@ -11,8 +11,8 @@ def ping(host):
     """
     ping_time = 0.0
     try:
-        # args:  -c1 - send one ping
-        #        -w1 - timeout after 1 second
+        # ping args:  -c1 - send one ping
+        #             -w1 - timeout after 1 second
         output = subprocess.check_output(["ping", "-c1", "-w1", host])
         # if any pings got through the last line shows the ping times:
         #   rtt min/avg/max/mdev = 13.965/13.965/13.965/0.000 ms
@@ -32,9 +32,6 @@ def ping(host):
 
 class NetSampler:
     """Returns metrics for network access"""
-
-    def __init__(self):
-        pass
 
     def get_samples(self):
         # we use ping with a 1 second timeout, which means if the host

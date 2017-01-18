@@ -7,24 +7,23 @@ from wemo_sampler import WemoSampler
 from sense_hat_sampler import SenseHatSampler
 from net_sampler import NetSampler
 from settings import NODE
+from poller import Poller
 
 DATABASE = "rpdemo"
-SAMPLE_INTERVAL = 5.0
+SAMPLE_INTERVAL = 1.0
 
-def build_points(samplers):
-    """build a list of influx points by getting metric values from the samplers"""
-    points = []
+def build_points(items):
+    """build a list of influx data points from the given list of PollItems"""
+    fields = {}
+    for item in items:
+        fields[item.name] = item.last_value
 
-    for name, sampler in samplers.items():
-        samples = sampler.get_samples()
-        if samples:
-            point = {
-                "measurement": name,
-                "fields": samples
-            }
-            points.append(point)
+    point = {
+        "measurement": "rpdemo",
+        "fields": fields
+    }
 
-    return points
+    return [point]
 
 if __name__ == "__main__":
 
@@ -35,12 +34,12 @@ if __name__ == "__main__":
     influx.create_database(DATABASE)
     influx.switch_database(DATABASE)
 
-    # the samplers gather the metrics we are logging
-    samplers = {}
-    samplers["system"] = SystemSampler()
-    samplers["wemo"] = WemoSampler()
-    samplers["net"] = NetSampler()
-    samplers["sensehat"] = SenseHatSampler()
+    poller = Poller()
+
+    # create some example items to poll
+    poller.create_test_items()
+
+    poller.init()
 
     # every point is tagged with the node. This is not necessary in the local DB
     # but this way it's the same schema as the central DB (CDS)
@@ -49,15 +48,27 @@ if __name__ == "__main__":
     while True:
         start_timestamp = datetime.datetime.now()
 
-        points = build_points(samplers)
+        # enque the due items for polling by the threads
+        poller.poll_due_items_async()
 
-        built_timestamp = datetime.datetime.now()
-        logging.debug("built points in {0} ms".format((built_timestamp - start_timestamp).total_seconds()*1000))
-        logging.debug("{0} {1}".format(tags, points))
+        # Wait a short while for fast poll results to come in. It doesn't matter if slow ones are not
+        # complete after this wait - we'll check for them next time around.
+        time.sleep(0.1)
 
-        influx.write_points(points, tags=tags)
-        wrote_timestamp = datetime.datetime.now()
-        logging.debug("wrote points in {0} ms".format((wrote_timestamp-built_timestamp).total_seconds()*1000))
+        # collect any results (PollItems) that are ready
+        result_items = poller.collect_poll_results()
+
+        if result_items:
+            # build influx points from the results and write them to influx DB
+            points = build_points(result_items)
+
+            built_timestamp = datetime.datetime.now()
+            logging.debug("built points in {0} ms".format((built_timestamp - start_timestamp).total_seconds()*1000))
+            logging.debug("{0} {1}".format(tags, points))
+
+            influx.write_points(points, tags=tags)
+            wrote_timestamp = datetime.datetime.now()
+            logging.debug("wrote points in {0} ms".format((wrote_timestamp-built_timestamp).total_seconds()*1000))
 
         # the time taken to build and write the data points
         cycle_time = (datetime.datetime.now() - start_timestamp).total_seconds()
