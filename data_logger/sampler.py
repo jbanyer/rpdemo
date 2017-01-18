@@ -21,8 +21,13 @@ class Sampler:
            |-----------------------+------------------------|
            | net.ping              | google.com.au          |
            | sensehat.temperature  |                        |
+           | sensehat.humidity     |                        |
+           | sensehat.pressure     |                        |
            | system.loadavg1       |                        |
+           | system.loadavg5       |                        |
+           | system.loadavg15      |                        |
            | wemo.power            | switch1                |
+           | wemo.state            | switch1                |
            |-----------------------|------------------------|
         """
         sampler_name, subkey = key.split(".")

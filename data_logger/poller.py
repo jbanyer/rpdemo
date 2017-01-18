@@ -123,6 +123,7 @@ class Poller:
         # this will raise KeyError if the item is not found
         item = self.get_item(name)
         # now delete it
+        # TODO: confirm this is thread-safe, since it's typically called by the Flask thread
         self._items = [item for item in self._items if item.name != name]
 
     def get_items_config(self):
