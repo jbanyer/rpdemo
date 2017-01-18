@@ -5,8 +5,8 @@ class SystemSampler:
     def __init__(self):
         self.proc = Proc()
         self.sample_funcs = {
-            "loadavg1": lambda: self.get_loadavg()[1]
-            "loadavg5": lambda: self.get_loadavg()[5]
+            "loadavg1": lambda: self.get_loadavg()[1],
+            "loadavg5": lambda: self.get_loadavg()[5],
             "loadavg15": lambda: self.get_loadavg()[15]
         }
 
