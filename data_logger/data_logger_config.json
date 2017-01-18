@@ -1,0 +1,78 @@
+{
+  "database": "rpdemo",
+  "polling_threads": 4,
+  "items": [
+    {
+      "interval": 1,
+      "name": "loadavg1 1s",
+      "key": "system.loadavg1",
+      "arg": null
+    },
+    {
+      "interval": 5,
+      "name": "loadavg1 5s",
+      "key": "system.loadavg1",
+      "arg": null
+    },
+    {
+      "interval": 60,
+      "name": "loadavg1 60s",
+      "key": "system.loadavg1",
+      "arg": null
+    },
+    {
+      "interval": 1,
+      "name": "ping google.com.au",
+      "key": "net.ping",
+      "arg": "google.com.au"
+    },
+    {
+      "interval": 1,
+      "name": "ping google.com",
+      "key": "net.ping",
+      "arg": "google.com"
+    },
+    {
+      "interval": 1,
+      "name": "ping www.microsoft.com",
+      "key": "net.ping",
+      "arg": "www.microsoft.com"
+    },
+    {
+      "interval": 1,
+      "name": "ping www.tesla.co",
+      "key": "net.ping",
+      "arg": "www.tesla.co"
+    },
+    {
+      "interval": 1,
+      "name": "switch1 power",
+      "key": "wemo.power",
+      "arg": "switch1"
+    },
+    {
+      "interval": 1,
+      "name": "switch1 state",
+      "key": "wemo.state",
+      "arg": "switch1"
+    },
+    {
+      "interval": 10,
+      "name": "sensehat temperature",
+      "key": "sensehat.temperature",
+      "arg": null
+    },
+    {
+      "interval": 10,
+      "name": "sensehat humidity",
+      "key": "sensehat.humidity",
+      "arg": null
+    },
+    {
+      "interval": 10,
+      "name": "sensehat pressure",
+      "key": "sensehat.pressure",
+      "arg": null
+    }
+  ]
+}
