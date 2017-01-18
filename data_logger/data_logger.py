@@ -1,11 +1,11 @@
 import datetime
 import time
 from influxdb import InfluxDBClient
-import system_metrics as sysmet
 import subprocess
 import re
 import logging
-import wemo_sampler
+from system_sampler import SystemSampler
+from wemo_sampler import WemoSampler
 from settings import NODE
 
 # this only works if the raspberry pi SenseHat package is installed
@@ -46,15 +46,6 @@ def ping(host):
 
     return ping_time
 
-def get_system_fields():
-    loadavg = sysmet.get_loadavg()
-
-    fields = {
-        "loadavg1": loadavg[1]
-    }
-
-    return fields
-
 def get_sensehat_fields():
     fields = {
         "temperature": float(sense.get_temperature()),
@@ -82,12 +73,18 @@ def build_point(measurement, fields):
     }
     return point
 
-def build_points():
+def build_points(samplers):
+    """
+    build a list of influx points by getting metric values from the samplers
+    """
     points = []
 
-    points.append(build_point("system", get_system_fields()))
+    for name, sampler in samplers.items():
+        samples = sampler.get_samples()
+        if samples:
+            points.append(build_point(name, samples))
+
     points.append(build_point("net", get_net_fields()))
-    points.append(build_point("wemo", wemo_sampler.get_samples()))
 
     global sense
     if sense is not None:
@@ -97,12 +94,17 @@ def build_points():
 
 if __name__ == "__main__":
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s", level=logging.DEBUG)
 
     influx = InfluxDBClient("localhost", 8086)
 
     influx.create_database(DATABASE)
     influx.switch_database(DATABASE)
+
+    # the samplers gather the metrics we are logging
+    samplers = {}
+    samplers["system"] = SystemSampler()
+    samplers["wemo"] = WemoSampler()
 
     # every point is tagged with the node. This is not necessary in the local DB
     # but this way it's the same schema as the central DB (CDS)
@@ -111,7 +113,7 @@ if __name__ == "__main__":
     while True:
         start_timestamp = datetime.datetime.now()
 
-        points = build_points()
+        points = build_points(samplers)
 
         built_timestamp = datetime.datetime.now()
         logging.debug("built points in {0} ms".format((built_timestamp - start_timestamp).total_seconds()*1000))
@@ -128,4 +130,4 @@ if __name__ == "__main__":
             logging.debug("sleeping for {0} seconds".format(sleep_time_sec))
             time.sleep(sleep_time_sec)
         else:
-            logging.warn("cycle time {0} exceeded sample interval {1}", cycle_time, SAMPLE_INTERVAL)
+            logging.warn("cycle time {0} exceeded sample interval {1}".format(cycle_time, SAMPLE_INTERVAL))
