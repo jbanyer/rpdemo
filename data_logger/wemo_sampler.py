@@ -6,6 +6,8 @@ class WemoSampler:
     def __init__(self):
         self.wemo_env = Environment()
         self.wemo_env.start()
+        # TODO: run discovery periodically instead of just on startup to
+        # discover new devices that have been enabled?
         self.discover()
 
     def discover(self):

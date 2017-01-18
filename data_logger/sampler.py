@@ -20,8 +20,8 @@ class Sampler:
            | key                   | arg                    |
            |-----------------------+------------------------|
            | net.ping              | google.com.au          |
-           | sensehat.temperature  | None                   |
-           | system.loadavg1       | None                   |
+           | sensehat.temperature  |                        |
+           | system.loadavg1       |                        |
            | wemo.power            | switch1                |
            |-----------------------|------------------------|
         """

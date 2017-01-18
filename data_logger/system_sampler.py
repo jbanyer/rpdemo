@@ -13,16 +13,9 @@ class SystemSampler:
         # return just the 1,5,15 load average values
         return self.proc.loadavg['average']
 
-    def get_sample(self, name, arg):
+    def get_sample(self, key, arg):
         try:
-            func = self.sample_funcs[name]
+            func = self.sample_funcs[key]
             return func()
         except KeyError:
-            raise ValueError("system sampler - unknown name: {0}".format(name))
-
-    def get_samples(self):
-        samples = {
-            "loadavg1": self.get_loadavg()[1]
-        }
-
-        return samples
+            raise ValueError("unknown key: {0}".format(key))
