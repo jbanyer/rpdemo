@@ -13,7 +13,7 @@ class SystemSampler:
         # return just the 1,5,15 load average values
         return self.proc.loadavg['average']
 
-    def get_sample(self, name, args):
+    def get_sample(self, name, arg):
         try:
             func = self.sample_funcs[name]
             return func()

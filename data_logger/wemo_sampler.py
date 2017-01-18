@@ -13,17 +13,20 @@ class WemoSampler:
         self.wemo_env.discover(seconds=1)
         logging.info("WeMo devices found: {0}".format(self.wemo_env.devices))
 
-    def get_samples(self):
-        # TODO: do we need to run discovery periodically to discover/enabled new switches?
-        switch_names = self.wemo_env.list_switches()
-        samples = {}
-        for switch_name in switch_names:
-            switch = self.wemo_env.get_switch(switch_name)
-            # is it on or off (1 or 0)?
-            samples[switch_name+".state"] = switch.get_state()
-            # only Insight Switches can report power, not the regular switches
-            if hasattr(switch, "current_power"):
-                # current_power seems to be in mW, convert to W
-                samples[switch_name+".power"] = switch.current_power / 1000.0
+    def get_switch(self, switch_name):
+        return self.wemo_env.get_switch(switch_name)
 
-        return samples
+    def get_sample(self, key, arg):
+        if key == "power":
+            if not arg:
+                raise ValueError("wemo.power requires arg (switch name)")
+            switch = self.get_switch(arg)
+            # current_power seems to be in mW, convert to W
+            return switch.current_power / 1000.0
+        elif key == "state":
+            if not arg:
+                raise ValueError("wemo.state requires arg (switch name)")
+            switch = self.get_switch(arg)
+            return switch.get_state()
+        else:
+            raise ValueError("unknown key: {0}".format(key))

@@ -2,8 +2,6 @@ import logging
 import re
 import subprocess
 
-PING_GOOGLE_HOST = "google.com.au"
-
 def ping(host):
     """
     ping the given host.
@@ -33,13 +31,11 @@ def ping(host):
 class NetSampler:
     """Returns metrics for network access"""
 
-    def get_samples(self):
-        # we use ping with a 1 second timeout, which means if the host
-        # is not answering this call may take up to 1 second to return
-        ping_google = ping(PING_GOOGLE_HOST)
-
-        samples = {
-            "ping_google": ping_google
-        }
-
-        return samples
+    def get_sample(self, key, arg):
+        if key == "ping":
+            if not arg:
+                raise ValueError("ping requires host arg")
+            host = arg
+            return ping(host)
+        else:
+            raise ValueError("NetSampler unknown key: {0}".format(key))
