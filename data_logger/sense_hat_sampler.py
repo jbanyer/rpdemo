@@ -10,9 +10,9 @@ class SenseHatSampler:
             self.sense = SenseHat()
 
             self.sample_funcs = {
-                "sensehat.temperature": lambda: float(self.sense.get_temperature()),
-                "sensehat.humidity": lambda: float(self.sense.get_humidity()),
-                "sensehat.pressure": lambda: float(self.sense.get_pressure())
+                "temperature": lambda: float(self.sense.get_temperature()),
+                "humidity": lambda: float(self.sense.get_humidity()),
+                "pressure": lambda: float(self.sense.get_pressure())
             }
         except ImportError:
             logging.info("sense_hat package not found")
