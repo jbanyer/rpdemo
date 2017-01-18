@@ -5,6 +5,8 @@ import system_metrics as sysmet
 import subprocess
 import re
 import logging
+import wemo_sampler
+from settings import NODE
 
 # this only works if the raspberry pi SenseHat package is installed
 sense = None
@@ -44,35 +46,25 @@ def ping(host):
 
     return ping_time
 
-def build_system_point():
+def get_system_fields():
     loadavg = sysmet.get_loadavg()
 
     fields = {
         "loadavg1": loadavg[1]
     }
 
-    point = {
-        "measurement": "system",
-        "fields": fields
-    }
+    return fields
 
-    return point
-
-def build_sensehat_point():
+def get_sensehat_fields():
     fields = {
         "temperature": float(sense.get_temperature()),
         "humidity": float(sense.get_humidity()),
         "pressure": float(sense.get_pressure())
     }
 
-    point = {
-        "measurement": "sensehat",
-        "fields": fields
-    }
+    return fields
 
-    return point
-
-def build_net_point():
+def get_net_fields():
     # we use ping with a 1 second timeout, which means if the host
     # is not answering this call may take up to 1 second to return
     ping_google = ping(PING_GOOGLE_HOST)
@@ -81,18 +73,21 @@ def build_net_point():
         "ping_google": ping_google
     }
 
+    return fields
+
+def build_point(measurement, fields):
     point = {
-        "measurement": "net",
+        "measurement": measurement,
         "fields": fields
     }
-
     return point
 
 def build_points():
-    points = [
-        build_system_point(),
-        build_net_point()
-    ]
+    points = []
+
+    points.append(build_point("system", get_system_fields()))
+    points.append(build_point("net", get_net_fields()))
+    points.append(build_point("wemo", wemo_sampler.get_samples()))
 
     global sense
     if sense is not None:
@@ -109,6 +104,10 @@ if __name__ == "__main__":
     influx.create_database(DATABASE)
     influx.switch_database(DATABASE)
 
+    # every point is tagged with the node. This is not necessary in the local DB
+    # but this way it's the same schema as the central DB (CDS)
+    tags = {"node": NODE}
+
     while True:
         start_timestamp = datetime.datetime.now()
 
@@ -116,12 +115,17 @@ if __name__ == "__main__":
 
         built_timestamp = datetime.datetime.now()
         logging.debug("built points in {0} ms".format((built_timestamp - start_timestamp).total_seconds()*1000))
-        logging.debug(str(points))
+        logging.debug("{0} {1}".format(tags, points))
 
-        influx.write_points(points)
+        influx.write_points(points, tags=tags)
         wrote_timestamp = datetime.datetime.now()
         logging.debug("wrote points in {0} ms".format((wrote_timestamp-built_timestamp).total_seconds()*1000))
 
-        sleep_time_sec = SAMPLE_INTERVAL - (datetime.datetime.now() - start_timestamp).total_seconds()
-        time.sleep(sleep_time_sec)
-
+        # the time taken to build and write the data points
+        cycle_time = (datetime.datetime.now() - start_timestamp).total_seconds()
+        if cycle_time < SAMPLE_INTERVAL:
+            sleep_time_sec = SAMPLE_INTERVAL - cycle_time
+            logging.debug("sleeping for {0} seconds".format(sleep_time_sec))
+            time.sleep(sleep_time_sec)
+        else:
+            logging.warn("cycle time {0} exceeded sample interval {1}", cycle_time, SAMPLE_INTERVAL)
