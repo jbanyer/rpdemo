@@ -1,17 +1,22 @@
 import datetime
 import time
-from sense_hat import SenseHat
 from influxdb import InfluxDBClient
 import system_metrics as sysmet
 import subprocess
 import re
 import logging
 
+# this only works if the raspberry pi SenseHat package is installed
+sense = None
+try:
+    from sense_hat import SenseHat
+    sense = SenseHat()
+except ImportError:
+    pass
+
 DATABASE = "rpdemo"
 SAMPLE_INTERVAL = 5.0
 PING_GOOGLE_HOST = "google.com.au"
-
-sense = SenseHat()
 
 def ping(host):
     """
@@ -86,9 +91,13 @@ def build_net_point():
 def build_points():
     points = [
         build_system_point(),
-        build_sensehat_point(),
         build_net_point()
     ]
+
+    global sense
+    if sense is not None:
+        points.append(build_sensehat_point)
+
     return points
 
 if __name__ == "__main__":
