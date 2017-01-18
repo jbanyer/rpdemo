@@ -8,6 +8,8 @@ from threading import Thread
 
 SAMPLE_INTERVAL = 1.0
 
+class ItemExistsError(Exception):
+    pass
 
 class PollItem:
     """A PollItem is a metric that is sampled (polled) periodically and inserted into the database."""
@@ -25,8 +27,11 @@ class PollItem:
         self.arg = arg
         self.interval = interval
         self.last_value = None
-        self.next_poll_time = None
         self.poll_in_progress = False
+
+        # For the initial poll, add a random delay up the interval to stagger the items
+        delay = random.randint(0, self.interval)
+        self.next_poll_time = datetime.datetime.now() + datetime.timedelta(seconds=delay)
 
     def __str__(self):
         return "{0} ({1}[{2}])".format(self.name, self.key, self.arg)
@@ -48,14 +53,6 @@ class PollItem:
             self.last_value = None
             logging.debug("{0} error: {1}".format(self, e))
         self.poll_in_progress = False
-
-    def init_next_poll_time(self, now):
-        """Initialise self.next_poll_time given the current time.
-
-        For the initial poll, add a random delay up the interval to stagger the items
-        """
-        delay = random.randint(0, self.interval)
-        self.next_poll_time = now + datetime.timedelta(seconds=delay)
 
 
 class PollingThread(Thread):
@@ -105,11 +102,6 @@ class Poller:
             thread.start()
             self._threads.append(thread)
 
-    def _init_items(self):
-        now = datetime.datetime.now()
-        for item in self._items:
-            item.init_next_poll_time(now)
-
     def add_item(self, name, key, arg, interval):
         """Add a new item to be polled.
 
@@ -118,8 +110,20 @@ class Poller:
             key (str): eg "net.ping"
             arg (str): eg "google.com.au" (optional, use depends on key)
             interval (int): eg 5.0 (seconds)
+
+        Raises ItemExistsError if item with given name already exists
+
         """
+        if name in [i.name for i in self._items]:
+            raise ItemExistsError("item already exists: {0}".format(name))
+
         self._items.append(PollItem(name, key, arg, interval))
+
+    def delete_item(self, name):
+        # this will raise KeyError if the item is not found
+        item = self.get_item(name)
+        # now delete it
+        self._items = [item for item in self._items if item.name != name]
 
     def get_items_config(self):
         """Return a list of dicts describing the poll items, suitable for serialisation to JSON"""
@@ -160,9 +164,19 @@ class Poller:
         for item in items_config:
             self.add_item(item["name"], item["key"], item["arg"], item["interval"])
 
-    def get_poll_items(self):
+    def get_items(self):
         """return a list of all the PollItems"""
         return self._items
+
+    def get_item(self, name):
+        """return the PollItem with the given name
+
+        Raises KeyError if not found
+        """
+        for item in self._items:
+            if item.name == name:
+                return item
+        raise KeyError("item not found: {0}".format(name))
 
     def run(self, num_polling_threads, results_callback):
         """Run the polling main loop, polling items as per their polling interval.
@@ -176,7 +190,6 @@ class Poller:
             raise Exception("Poller already running")
 
         self._start_polling_threads(num_polling_threads)
-        self._init_items()
 
         while True:
             start_timestamp = datetime.datetime.now()

@@ -32,8 +32,19 @@ class DataLogger:
         }
         return config
 
-    def get_poll_items(self):
-        return self._poller.get_poll_items()
+    def add_item(self, name, key, interval, arg=None):
+        self._poller.add_item(name, key, arg, interval)
+        logging.info("item added: {0}".format(name))
+
+    def delete_item(self, name):
+        self._poller.delete_item(name)
+        logging.info("item deleted: {0}".format(name))
+
+    def get_items(self):
+        return self._poller.get_items()
+
+    def get_item(self, name):
+        return self._poller.get_item(name)
 
     def create_test_items(self):
         self._poller.add_item("loadavg1 1s", "system.loadavg1", None, 1)
